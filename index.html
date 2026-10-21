@@ -249,13 +249,9 @@ button.secondary:hover {
 </div>
 <script>
 const SAMPLE_VOCAB = [
-  { word: "house", translation: "Haus", sentence: "Das Haus ist sehr groß.", sentenceTranslation: "The house is very big." },
-  { word: "apple", translation: "Apfel", sentence: "Ich esse jeden Tag einen Apfel.", sentenceTranslation: "I eat an apple every day." },
-  { word: "water", translation: "Wasser", sentence: "Sie trinkt ein Glas Wasser.", sentenceTranslation: "She drinks a glass of water." },
+  { word: "(to) forget", translation: "vergessen" },
   { word: "friend", translation: "Freund", sentence: "Mein Freund lebt in Berlin.", sentenceTranslation: "My friend lives in Berlin." },
-  { word: "book", translation: "Buch", sentence: "Er liest ein gutes Buch.", sentenceTranslation: "He is reading a good book." },
-  { word: "school", translation: "Schule", sentence: "Die Kinder gehen zur Schule.", sentenceTranslation: "The children walk to school." },
-  { word: "kennen", translation: "meet", sentence: "Freut mich dich kennen zu lernen.", sentenceTranslation: "Nice to meet you." },
+  { sentence: "Freut mich dich kennen zu lernen.", sentenceTranslation: "Nice to meet you." },
 ];
 
 const STORAGE_KEY = "vocab-app-list";
@@ -305,12 +301,14 @@ function normalize(str) {
 function buildExercises(vocabList) {
   const items = [];
   vocabList.forEach((entry) => {
-    const direction = Math.random() < 0.5 ? "wordToTranslation" : "translationToWord";
-    items.push({
-      kind: "translate",
-      entry,
-      direction,
-    });
+    if (entry.word && entry.translation) {
+      const direction = Math.random() < 0.5 ? "wordToTranslation" : "translationToWord";
+      items.push({
+        kind: "translate",
+        entry,
+        direction,
+      });
+    }
     if (entry.sentence && entry.sentence.trim()) {
       const sentenceType = Math.random() < 0.5 ? "sentenceBlock" : "sentenceWrite";
       items.push({
@@ -328,11 +326,10 @@ function parseVocabInput(text) {
     throw new Error("Vocabulary must be a non-empty JSON array.");
   }
   data.forEach((entry, i) => {
-    if (!entry.word || !entry.translation) {
-      throw new Error(`Entry ${i + 1} needs at least "word" and "translation".`);
-    }
-    if (entry.sentence && !entry.sentenceTranslation) {
-      throw new Error(`Entry ${i + 1} has "sentence" but missing "sentenceTranslation".`);
+    const hasWordPair = entry.word && entry.translation;
+    const hasSentencePair = entry.sentence && entry.sentenceTranslation;
+    if (!hasWordPair && !hasSentencePair) {
+      throw new Error(`Entry ${i + 1} needs either ("word" and "translation") or ("sentence" and "sentenceTranslation").`);
     }
   });
   return data;
