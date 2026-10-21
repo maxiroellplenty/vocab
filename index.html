@@ -210,8 +210,8 @@ button.secondary:hover {
   <section id="setup">
     <h2>Vocabulary List</h2>
     <p class="hint">
-      JSON array of entries: <code>{"word": "...", "translation": "...", "sentence": "...", "sentenceTranslation": "..."}</code>.
-      Sentences are optional. If provided, block-building exercises show the translated sentence and you build the original.
+      JSON array of entries: <code>{"word": "...", "translation": "..." or ["...", "..."], "sentence": "...", "sentenceTranslation": "..."}</code>.
+      Translation can be a string or an array of acceptable answers. Sentences are optional. If provided, block-building exercises show the translated sentence and you build the original.
     </p>
     <textarea id="vocabInput" rows="12" spellcheck="false"></textarea>
     <div class="setup-actions">
@@ -250,7 +250,7 @@ button.secondary:hover {
 <script>
 const SAMPLE_VOCAB = [
   { word: "(to) forget", translation: "vergessen" },
-  { word: "friend", translation: "Freund", sentence: "Mein Freund lebt in Berlin.", sentenceTranslation: "My friend lives in Berlin." },
+  { word: "friend", translation: ["Freund", "Freundin"], sentence: "Mein Freund lebt in Berlin.", sentenceTranslation: "My friend lives in Berlin." },
   { sentence: "Freut mich dich kennen zu lernen.", sentenceTranslation: "Nice to meet you." },
 ];
 
@@ -296,6 +296,10 @@ function normalize(str) {
     .trim()
     .replace(/[.,!?;:]/g, "")
     .replace(/\s+/g, " ");
+}
+
+function normalizeMultiple(input) {
+  return Array.isArray(input) ? input.map(normalize) : [normalize(input)];
 }
 
 function buildExercises(vocabList) {
@@ -404,9 +408,11 @@ function renderTranslateExercise(ex) {
 
 function renderSentenceBlockExercise(ex) {
   const { entry } = ex;
-  const tokens = entry.sentence.trim().split(/\s+/);
+  const sentences = Array.isArray(entry.sentence) ? entry.sentence : [entry.sentence];
+  const tokens = sentences[0].trim().split(/\s+/);
   const shuffled = shuffle(tokens.map((t, i) => ({ text: t, id: i })));
-  const promptText = entry.sentenceTranslation || entry.sentence;
+  const sentenceTranslations = Array.isArray(entry.sentenceTranslation) ? entry.sentenceTranslation : [entry.sentenceTranslation];
+  const promptText = sentenceTranslations[0] || sentences[0];
 
   const typeTag = document.createElement("div");
   typeTag.className = "exercise-type";
@@ -482,7 +488,8 @@ function renderSentenceBlockExercise(ex) {
 
 function renderSentenceWriteExercise(ex) {
   const { entry } = ex;
-  const promptText = entry.sentenceTranslation || entry.sentence;
+  const sentenceTranslations = Array.isArray(entry.sentenceTranslation) ? entry.sentenceTranslation : [entry.sentenceTranslation];
+  const promptText = sentenceTranslations[0] || (Array.isArray(entry.sentence) ? entry.sentence[0] : entry.sentence);
 
   const typeTag = document.createElement("div");
   typeTag.className = "exercise-type";
@@ -530,18 +537,26 @@ function checkAnswer() {
     const input = document.getElementById("answerInput");
     const userAnswer = input.value;
     const expected = ex.direction === "wordToTranslation" ? ex.entry.translation : ex.entry.word;
-    correctAnswerText = expected;
-    isCorrect = normalize(userAnswer) === normalize(expected);
+    const acceptedAnswers = normalizeMultiple(expected);
+    const displayAnswers = Array.isArray(expected) ? expected.join(" or ") : expected;
+    correctAnswerText = displayAnswers;
+    isCorrect = acceptedAnswers.includes(normalize(userAnswer));
     input.disabled = true;
   } else if (ex.kind === "sentenceBlock") {
     const builtText = els.exercise._getPlacedText();
-    correctAnswerText = ex.entry.sentence;
-    isCorrect = normalize(builtText) === normalize(ex.entry.sentence);
+    const sentences = Array.isArray(ex.entry.sentence) ? ex.entry.sentence : [ex.entry.sentence];
+    const displayAnswers = Array.isArray(ex.entry.sentence) ? ex.entry.sentence.join(" or ") : ex.entry.sentence;
+    correctAnswerText = displayAnswers;
+    const normalizedSentences = sentences.map(normalize);
+    isCorrect = normalizedSentences.includes(normalize(builtText));
   } else if (ex.kind === "sentenceWrite") {
     const input = document.getElementById("sentenceInput");
     const userAnswer = input.value;
-    correctAnswerText = ex.entry.sentence;
-    isCorrect = normalize(userAnswer) === normalize(ex.entry.sentence);
+    const sentences = Array.isArray(ex.entry.sentence) ? ex.entry.sentence : [ex.entry.sentence];
+    const displayAnswers = Array.isArray(ex.entry.sentence) ? ex.entry.sentence.join(" or ") : ex.entry.sentence;
+    correctAnswerText = displayAnswers;
+    const normalizedSentences = sentences.map(normalize);
+    isCorrect = normalizedSentences.includes(normalize(userAnswer));
     input.disabled = true;
   }
 
