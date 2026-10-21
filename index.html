@@ -181,6 +181,53 @@ button.secondary:hover {
   border-color: #31a24c;
 }
 
+.choice-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.choice-btn {
+  width: 100%;
+  padding: 1.2rem 1.5rem;
+  background: #fff;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  color: black;
+  font-size: 1.1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.choice-btn:hover:not(:disabled) {
+  transform: translateX(4px);
+}
+
+.choice-btn:disabled {
+  cursor: not-allowed;
+}
+
+.choice-btn.selected {
+  background: #0084ff;
+  border-color: #0084ff;
+  color: #fff;
+}
+
+.choice-btn.correct {
+  background: #31a24c;
+  border-color: #31a24c;
+  color: #fff;
+}
+
+.choice-btn.incorrect {
+  background: #c0392b;
+  border-color: #c0392b;
+  color: #fff;
+}
+
 .practice-actions {
   display: flex;
   gap: 0.75rem;
@@ -210,8 +257,8 @@ button.secondary:hover {
   <section id="setup">
     <h2>Vocabulary List</h2>
     <p class="hint">
-      JSON array of entries: <code>{"word": "...", "translation": "..." or ["...", "..."], "sentence": "...", "sentenceTranslation": "..."}</code>.
-      Translation can be a string or an array of acceptable answers. Sentences are optional. If provided, block-building exercises show the translated sentence and you build the original.
+      JSON array of entries: <code>{"word": "...", "translation": "...", "options": ["...", "...", "..."], "sentence": "...", "sentenceTranslation": "..."}</code>.
+      Translation can be a string or array. Add optional <code>options</code> array for multiple-choice mode. Sentences are optional.
     </p>
     <textarea id="vocabInput" rows="12" spellcheck="false"></textarea>
     <div class="setup-actions">
@@ -251,6 +298,7 @@ button.secondary:hover {
 const SAMPLE_VOCAB = [
   { word: "(to) forget", translation: "vergessen" },
   { word: "friend", translation: ["Freund", "Freundin"], sentence: "Mein Freund lebt in Berlin.", sentenceTranslation: "My friend lives in Berlin." },
+  { word: "house", translation: "Haus", options: ["House", "Car", "Garage"] },
   { sentence: "Freut mich dich kennen zu lernen.", sentenceTranslation: "Nice to meet you." },
 ];
 
@@ -306,12 +354,20 @@ function buildExercises(vocabList) {
   const items = [];
   vocabList.forEach((entry) => {
     if (entry.word && entry.translation) {
-      const direction = Math.random() < 0.5 ? "wordToTranslation" : "translationToWord";
-      items.push({
-        kind: "translate",
-        entry,
-        direction,
-      });
+      if (entry.options) {
+        items.push({
+          kind: "translate",
+          entry,
+          direction: "wordToTranslation",
+        });
+      } else {
+        const direction = Math.random() < 0.5 ? "wordToTranslation" : "translationToWord";
+        items.push({
+          kind: "translate",
+          entry,
+          direction,
+        });
+      }
     }
     if (entry.sentence && entry.sentence.trim()) {
       const sentenceType = Math.random() < 0.5 ? "sentenceBlock" : "sentenceWrite";
@@ -377,33 +433,66 @@ function renderExercise() {
 
 function renderTranslateExercise(ex) {
   const { entry, direction } = ex;
+  const useMultipleChoice = !!entry.options;
+
   const prompt = direction === "wordToTranslation" ? entry.word : entry.translation;
   const label = direction === "wordToTranslation" ? "Translate this word:" : "What is the original word for:";
 
   const typeTag = document.createElement("div");
   typeTag.className = "exercise-type";
-  typeTag.textContent = "Translation";
+  typeTag.textContent = useMultipleChoice ? "Multiple Choice" : "Translation";
 
   const promptEl = document.createElement("div");
   promptEl.className = "prompt";
   promptEl.textContent = `${label} ${prompt}`;
 
-  const input = document.createElement("input");
-  input.type = "text";
-  input.id = "answerInput";
-  input.autocomplete = "off";
-  input.placeholder = "Type your answer...";
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      if (!answered) checkAnswer();
-    }
-  });
-
   els.exercise.appendChild(typeTag);
   els.exercise.appendChild(promptEl);
-  els.exercise.appendChild(input);
-  input.focus();
+
+  if (useMultipleChoice) {
+    renderMultipleChoice(ex);
+  } else {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.id = "answerInput";
+    input.autocomplete = "off";
+    input.placeholder = "Type your answer...";
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (!answered) checkAnswer();
+      }
+    });
+
+    els.exercise.appendChild(input);
+    input.focus();
+  }
+}
+
+function renderMultipleChoice(ex) {
+  const { entry } = ex;
+  const correct = normalizeMultiple(entry.translation)[0];
+  const options = shuffle(entry.options);
+  let selectedAnswer = null;
+
+  const container = document.createElement("div");
+  container.className = "choice-buttons";
+
+  options.forEach((option) => {
+    const btn = document.createElement("button");
+    btn.textContent = option;
+    btn.className = "choice-btn";
+    btn.addEventListener("click", () => {
+      if (answered) return;
+      selectedAnswer = option;
+      document.querySelectorAll(".choice-btn").forEach((b) => b.classList.remove("selected"));
+      btn.classList.add("selected");
+    });
+    container.appendChild(btn);
+  });
+
+  els.exercise.appendChild(container);
+  els.exercise._getMultipleChoiceAnswer = () => selectedAnswer;
 }
 
 function renderSentenceBlockExercise(ex) {
@@ -534,14 +623,35 @@ function checkAnswer() {
   let correctAnswerText = "";
 
   if (ex.kind === "translate") {
-    const input = document.getElementById("answerInput");
-    const userAnswer = input.value;
+    const useMultipleChoice = !!ex.entry.options;
     const expected = ex.direction === "wordToTranslation" ? ex.entry.translation : ex.entry.word;
     const acceptedAnswers = normalizeMultiple(expected);
     const displayAnswers = Array.isArray(expected) ? expected.join(" or ") : expected;
     correctAnswerText = displayAnswers;
-    isCorrect = acceptedAnswers.includes(normalize(userAnswer));
-    input.disabled = true;
+
+    if (useMultipleChoice) {
+      const userAnswer = els.exercise._getMultipleChoiceAnswer();
+      if (!userAnswer) {
+        els.feedback.textContent = "Please select an answer.";
+        els.feedback.className = "incorrect";
+        return;
+      }
+      isCorrect = acceptedAnswers.includes(normalize(userAnswer));
+      document.querySelectorAll(".choice-btn").forEach((btn) => {
+        btn.disabled = true;
+        if (normalize(btn.textContent) === normalize(userAnswer)) {
+          btn.classList.toggle("correct", isCorrect);
+          btn.classList.toggle("incorrect", !isCorrect);
+        } else if (isCorrect === false && acceptedAnswers.includes(normalize(btn.textContent))) {
+          btn.classList.add("correct");
+        }
+      });
+    } else {
+      const input = document.getElementById("answerInput");
+      const userAnswer = input.value;
+      isCorrect = acceptedAnswers.includes(normalize(userAnswer));
+      input.disabled = true;
+    }
   } else if (ex.kind === "sentenceBlock") {
     const builtText = els.exercise._getPlacedText();
     const sentences = Array.isArray(ex.entry.sentence) ? ex.entry.sentence : [ex.entry.sentence];
