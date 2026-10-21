@@ -123,9 +123,22 @@ button.secondary:hover {
 }
 
 .prompt {
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
+  font-size: 1rem;
+  font-weight: 400;
+  margin-bottom: 1.5rem;
+  color: #666;
+}
+
+.prompt .word {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 0.75rem;
+  padding: 1rem 1.2rem;
+  background: #f0f7ff;
+  border-left: 4px solid #0084ff;
+  border-radius: 6px;
+  color: #0a3d7a;
 }
 
 .prompt .sub {
@@ -204,6 +217,7 @@ button.secondary:hover {
 
 .choice-btn:hover:not(:disabled) {
   transform: translateX(4px);
+  color: white;
 }
 
 .choice-btn:disabled {
@@ -296,10 +310,132 @@ button.secondary:hover {
 </div>
 <script>
 const SAMPLE_VOCAB = [
-  { word: "(to) forget", translation: "vergessen" },
-  { word: "friend", translation: ["Freund", "Freundin"], sentence: "Mein Freund lebt in Berlin.", sentenceTranslation: "My friend lives in Berlin." },
-  { word: "house", translation: "Haus", options: ["House", "Car", "Garage"] },
-  { sentence: "Freut mich dich kennen zu lernen.", sentenceTranslation: "Nice to meet you." },
+  {
+    "word": "there",
+    "translation": ["da", "dort", "dahin", "dorthin"]
+  },
+  {
+    "word": "sad",
+    "translation": "traurig"
+  },
+  {
+    "word": "Don't go.",
+    "translation": "Geh nicht."
+  },
+  {
+    "word": "Bye.",
+    "translation": "Tschüs."
+  },
+  {
+    "word": "Watch out!",
+    "translation": ["Pass auf!", "Vorsicht!"]
+  },
+  {
+    "word": "(I'm) sorry.",
+    "translation": ["Tut mir leid.", "Entschuldigung"]
+  },
+  {
+    "word": "So?",
+    "translation": ["Und?", "Na und?"]
+  },
+  {
+    "sentence": "Nice to meet you.",
+    "sentenceTranslation": ["Freut mich, dich kennenzulernen.", "Freut mich, euch kennenzulernen.", "Freut mich, Sie kennenzulernen."]
+  },
+  {
+    "word": "(to) hurry up",
+    "translation": "sich beeilen"
+  },
+  {
+    "word": "who?",
+    "translation": "wer?"
+  },
+  {
+    "word": "friendly",
+    "translation": "freundlich"
+  },
+  {
+    "word": "shoe",
+    "translation": "Schuh"
+  },
+  {
+    "word": "trainer",
+    "translation": "Turnschuh"
+  },
+  {
+    "word": "(to) forget",
+    "translation": "vergessen"
+  },
+  {
+    "word": "(to) wear",
+    "translation": "tragen"
+  },
+  {
+    "word": "British",
+    "translation": "britisch"
+  },
+  {
+    "word": "different",
+    "translation": ["verschieden", "anders"]
+  },
+  {
+    "word": "(to) have",
+    "translation": "haben"
+  },
+  {
+    "sentence": "I don't like green.",
+    "sentenceTranslation": ["Ich mag Grün nicht.", "Ich mag kein Grün."]
+  },
+  {
+    "word": "Have a go.",
+    "translation": "Versuch's mal."
+  },
+  {
+    "word": "language",
+    "translation": "Sprache"
+  },
+  {
+    "word": "form (of)",
+    "translation": "Form (von)"
+  },
+  {
+    "word": "of",
+    "translation": "von"
+  },
+  {
+    "word": "long",
+    "translation": "lang"
+  },
+  {
+    "word": "short",
+    "translation": "kurz"
+  },
+  {
+    "word": "people",
+    "translation": ["Leute", "Menschen"]
+  },
+  {
+    "word": "silly",
+    "translation": ["albern", "blöd"]
+  },
+  {
+    "word": "sentence",
+    "translation": "Satz"
+  },
+  {
+    "word": "Satz",
+    "translation": "sentence",
+    "options": ["word", "sentence", "line", "page"]
+    
+  },
+  {
+    "word": "help",
+    "translation": "Hilfe"
+  },
+  {
+    "word": "(to) help",
+    "translation": "helfen"
+  }
 ];
 
 const STORAGE_KEY = "vocab-app-list";
@@ -444,7 +580,7 @@ function renderTranslateExercise(ex) {
 
   const promptEl = document.createElement("div");
   promptEl.className = "prompt";
-  promptEl.textContent = `${label} ${prompt}`;
+  promptEl.innerHTML = `${label}<div class="word">${prompt}</div>`;
 
   els.exercise.appendChild(typeTag);
   els.exercise.appendChild(promptEl);
@@ -509,9 +645,7 @@ function renderSentenceBlockExercise(ex) {
 
   const promptEl = document.createElement("div");
   promptEl.className = "prompt";
-  promptEl.textContent = promptText;
-  promptEl.style.fontSize = "1.1rem";
-  promptEl.style.fontStyle = "italic";
+  promptEl.innerHTML = `<div class="word" style="font-style: italic;">${promptText}</div>`;
   promptEl.style.marginBottom = "1.5rem";
 
   const answerSlot = document.createElement("div");
@@ -586,9 +720,7 @@ function renderSentenceWriteExercise(ex) {
 
   const promptEl = document.createElement("div");
   promptEl.className = "prompt";
-  promptEl.textContent = promptText;
-  promptEl.style.fontSize = "1.1rem";
-  promptEl.style.fontStyle = "italic";
+  promptEl.innerHTML = `<div class="word" style="font-style: italic;">${promptText}</div>`;
   promptEl.style.marginBottom = "1.5rem";
 
   const input = document.createElement("textarea");
