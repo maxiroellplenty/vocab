@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vocab Trainer</title>
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: #f4f5f7;
+  color: #1f2430;
+  margin: 0;
+  padding: 2rem 1rem;
+}
+
+#app {
+  max-width: 640px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+h1 {
+  margin-top: 0;
+  font-size: 1.6rem;
+}
+
+h2 {
+  font-size: 1.1rem;
+  margin-top: 0;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.hint code {
+  background: #eee;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+}
+
+textarea {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  resize: vertical;
+}
+
+.setup-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+button {
+  padding: 0.6rem 1.1rem;
+  border: none;
+  border-radius: 8px;
+  background: #3457d5;
+  color: #fff;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #2a46b0;
+}
+
+button.secondary {
+  background: #e1e4ea;
+  color: #1f2430;
+}
+
+button.secondary:hover {
+  background: #cfd3dc;
+}
+
+.error {
+  color: #c0392b;
+  font-size: 0.85rem;
+  min-height: 1.2em;
+}
+
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 1rem;
+}
+
+#exercise {
+  min-height: 140px;
+}
+
+.exercise-type {
+  display: inline-block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #3457d5;
+  background: #eaefff;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  margin-bottom: 0.75rem;
+}
+
+.prompt {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.prompt .sub {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+#answerInput {
+  width: 100%;
+  font-size: 1.1rem;
+  padding: 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.answer-slot {
+  min-height: 3rem;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  align-items: flex-start;
+}
+
+.block-pool {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.block {
+  background: #eaefff;
+  border: 1px solid #c3cdfa;
+  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+  font-size: 1rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.block:hover {
+  background: #d7e0ff;
+}
+
+.block.placed {
+  background: #d7ffe0;
+  border-color: #a6e8b8;
+}
+
+.practice-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+#feedback {
+  margin-top: 1rem;
+  font-size: 0.95rem;
+  min-height: 1.4em;
+}
+
+#feedback.correct {
+  color: #1d8a3e;
+}
+
+#feedback.incorrect {
+  color: #c0392b;
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>Vocab Trainer</h1>
+
+  <section id="setup">
+    <h2>Vocabulary List</h2>
+    <p class="hint">
+      JSON array of entries: <code>{"word": "...", "translation": "...", "sentence": "..."}</code>.
+      The sentence should contain the word, and will be practiced as a block-building exercise.
+    </p>
+    <textarea id="vocabInput" rows="12" spellcheck="false"></textarea>
+    <div class="setup-actions">
+      <button id="loadSampleBtn" type="button">Load Sample</button>
+      <button id="startBtn" type="button">Start Practice</button>
+    </div>
+    <p id="setupError" class="error"></p>
+  </section>
+
+  <section id="practice" class="hidden">
+    <div class="status-bar">
+      <span id="progress"></span>
+      <span id="score"></span>
+    </div>
+
+    <div id="exercise"></div>
+
+    <div class="practice-actions">
+      <button id="checkBtn" type="button">Check</button>
+      <button id="resetWordBtn" type="button" class="hidden">Reset</button>
+      <button id="nextBtn" type="button" class="hidden">Next</button>
+    </div>
+
+    <div id="feedback"></div>
+  </section>
+
+  <section id="results" class="hidden">
+    <h2>Results</h2>
+    <p id="resultsText"></p>
+    <div class="setup-actions">
+      <button id="restartBtn" type="button">Practice Again</button>
+      <button id="backToSetupBtn" type="button">Edit Vocabulary</button>
+    </div>
+  </section>
+</div>
+<script>
+const SAMPLE_VOCAB = [
+  { word: "house", translation: "Haus", sentence: "The house is very big." },
+  { word: "apple", translation: "Apfel", sentence: "I eat an apple every day." },
+  { word: "water", translation: "Wasser", sentence: "She drinks a glass of water." },
+  { word: "friend", translation: "Freund", sentence: "My friend lives in Berlin." },
+  { word: "book", translation: "Buch", sentence: "He is reading a good book." },
+  { word: "school", translation: "Schule", sentence: "The children walk to school." },
+];
+
+const STORAGE_KEY = "vocab-app-list";
+
+const els = {
+  vocabInput: document.getElementById("vocabInput"),
+  loadSampleBtn: document.getElementById("loadSampleBtn"),
+  startBtn: document.getElementById("startBtn"),
+  setupError: document.getElementById("setupError"),
+  setup: document.getElementById("setup"),
+  practice: document.getElementById("practice"),
+  results: document.getElementById("results"),
+  progress: document.getElementById("progress"),
+  score: document.getElementById("score"),
+  exercise: document.getElementById("exercise"),
+  checkBtn: document.getElementById("checkBtn"),
+  resetWordBtn: document.getElementById("resetWordBtn"),
+  nextBtn: document.getElementById("nextBtn"),
+  feedback: document.getElementById("feedback"),
+  resultsText: document.getElementById("resultsText"),
+  restartBtn: document.getElementById("restartBtn"),
+  backToSetupBtn: document.getElementById("backToSetupBtn"),
+};
+
+let exercises = [];
+let currentIndex = 0;
+let correctCount = 0;
+let answered = false;
+
+function shuffle(array) {
+  const copy = array.slice();
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function normalize(str) {
+  return str
+    .toLowerCase()
+    .trim()
+    .replace(/[.,!?;:]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function buildExercises(vocabList) {
+  const items = [];
+  vocabList.forEach((entry) => {
+    const direction = Math.random() < 0.5 ? "wordToTranslation" : "translationToWord";
+    items.push({
+      kind: "translate",
+      entry,
+      direction,
+    });
+    if (entry.sentence && entry.sentence.trim()) {
+      items.push({
+        kind: "sentence",
+        entry,
+      });
+    }
+  });
+  return shuffle(items);
+}
+
+function parseVocabInput(text) {
+  const data = JSON.parse(text);
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new Error("Vocabulary must be a non-empty JSON array.");
+  }
+  data.forEach((entry, i) => {
+    if (!entry.word || !entry.translation) {
+      throw new Error(`Entry ${i + 1} needs at least "word" and "translation".`);
+    }
+  });
+  return data;
+}
+
+function startPractice(vocabList) {
+  exercises = buildExercises(vocabList);
+  currentIndex = 0;
+  correctCount = 0;
+  els.setup.classList.add("hidden");
+  els.results.classList.add("hidden");
+  els.practice.classList.remove("hidden");
+  renderExercise();
+}
+
+function updateStatusBar() {
+  els.progress.textContent = `Question ${currentIndex + 1} / ${exercises.length}`;
+  els.score.textContent = `Score: ${correctCount} / ${currentIndex}`;
+}
+
+function renderExercise() {
+  answered = false;
+  els.feedback.textContent = "";
+  els.feedback.className = "";
+  els.checkBtn.classList.remove("hidden");
+  els.nextBtn.classList.add("hidden");
+  els.resetWordBtn.classList.add("hidden");
+  updateStatusBar();
+
+  const ex = exercises[currentIndex];
+  els.exercise.innerHTML = "";
+
+  if (ex.kind === "translate") {
+    renderTranslateExercise(ex);
+  } else {
+    renderSentenceExercise(ex);
+  }
+}
+
+function renderTranslateExercise(ex) {
+  const { entry, direction } = ex;
+  const prompt = direction === "wordToTranslation" ? entry.word : entry.translation;
+  const label = direction === "wordToTranslation" ? "Translate this word:" : "What is the original word for:";
+
+  const typeTag = document.createElement("div");
+  typeTag.className = "exercise-type";
+  typeTag.textContent = "Translation";
+
+  const promptEl = document.createElement("div");
+  promptEl.className = "prompt";
+  promptEl.textContent = `${label} ${prompt}`;
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.id = "answerInput";
+  input.autocomplete = "off";
+  input.placeholder = "Type your answer...";
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (!answered) checkAnswer();
+    }
+  });
+
+  els.exercise.appendChild(typeTag);
+  els.exercise.appendChild(promptEl);
+  els.exercise.appendChild(input);
+  input.focus();
+}
+
+function renderSentenceExercise(ex) {
+  const { entry } = ex;
+  const tokens = entry.sentence.trim().split(/\s+/);
+  const shuffled = shuffle(tokens.map((t, i) => ({ text: t, id: i })));
+
+  const typeTag = document.createElement("div");
+  typeTag.className = "exercise-type";
+  typeTag.textContent = "Sentence Builder";
+
+  const promptEl = document.createElement("div");
+  promptEl.className = "prompt";
+  promptEl.textContent = `Build the sentence that uses the word "${entry.word}":`;
+
+  const answerSlot = document.createElement("div");
+  answerSlot.className = "answer-slot";
+  answerSlot.id = "answerSlot";
+
+  const pool = document.createElement("div");
+  pool.className = "block-pool";
+  pool.id = "blockPool";
+
+  const placedIds = [];
+
+  function renderBlocks() {
+    answerSlot.innerHTML = "";
+    pool.innerHTML = "";
+
+    placedIds.forEach((id) => {
+      const token = tokens[id];
+      const block = document.createElement("span");
+      block.className = "block placed";
+      block.textContent = token;
+      block.addEventListener("click", () => {
+        if (answered) return;
+        const idx = placedIds.indexOf(id);
+        if (idx !== -1) placedIds.splice(idx, 1);
+        renderBlocks();
+      });
+      answerSlot.appendChild(block);
+    });
+
+    shuffled
+      .filter((t) => !placedIds.includes(t.id))
+      .forEach((t) => {
+        const block = document.createElement("span");
+        block.className = "block";
+        block.textContent = t.text;
+        block.addEventListener("click", () => {
+          if (answered) return;
+          placedIds.push(t.id);
+          renderBlocks();
+        });
+        pool.appendChild(block);
+      });
+  }
+
+  renderBlocks();
+
+  els.exercise.appendChild(typeTag);
+  els.exercise.appendChild(promptEl);
+  els.exercise.appendChild(answerSlot);
+  els.exercise.appendChild(pool);
+
+  els.resetWordBtn.classList.remove("hidden");
+  els.resetWordBtn.onclick = () => {
+    if (answered) return;
+    placedIds.length = 0;
+    renderBlocks();
+  };
+
+  els.exercise.dataset.tokens = JSON.stringify(tokens);
+  els.exercise._getPlacedText = () => placedIds.map((id) => tokens[id]).join(" ");
+}
+
+function checkAnswer() {
+  const ex = exercises[currentIndex];
+  let isCorrect = false;
+  let correctAnswerText = "";
+
+  if (ex.kind === "translate") {
+    const input = document.getElementById("answerInput");
+    const userAnswer = input.value;
+    const expected = ex.direction === "wordToTranslation" ? ex.entry.translation : ex.entry.word;
+    correctAnswerText = expected;
+    isCorrect = normalize(userAnswer) === normalize(expected);
+    input.disabled = true;
+  } else {
+    const builtText = els.exercise._getPlacedText();
+    correctAnswerText = ex.entry.sentence;
+    isCorrect = normalize(builtText) === normalize(ex.entry.sentence);
+  }
+
+  answered = true;
+  if (isCorrect) correctCount++;
+
+  els.feedback.textContent = isCorrect
+    ? "Correct!"
+    : `Not quite. Correct answer: "${correctAnswerText}"`;
+  els.feedback.className = isCorrect ? "correct" : "incorrect";
+
+  els.checkBtn.classList.add("hidden");
+  els.resetWordBtn.classList.add("hidden");
+  els.nextBtn.classList.remove("hidden");
+  updateStatusBar();
+}
+
+function nextExercise() {
+  currentIndex++;
+  if (currentIndex >= exercises.length) {
+    showResults();
+  } else {
+    renderExercise();
+  }
+}
+
+function showResults() {
+  els.practice.classList.add("hidden");
+  els.results.classList.remove("hidden");
+  els.resultsText.textContent = `You got ${correctCount} out of ${exercises.length} correct.`;
+}
+
+els.loadSampleBtn.addEventListener("click", () => {
+  els.vocabInput.value = JSON.stringify(SAMPLE_VOCAB, null, 2);
+  els.setupError.textContent = "";
+});
+
+els.startBtn.addEventListener("click", () => {
+  try {
+    const vocabList = parseVocabInput(els.vocabInput.value);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(vocabList));
+    els.setupError.textContent = "";
+    startPractice(vocabList);
+  } catch (err) {
+    els.setupError.textContent = err.message;
+  }
+});
+
+els.checkBtn.addEventListener("click", () => {
+  if (!answered) checkAnswer();
+});
+
+els.nextBtn.addEventListener("click", nextExercise);
+
+els.restartBtn.addEventListener("click", () => {
+  const vocabList = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  startPractice(vocabList);
+});
+
+els.backToSetupBtn.addEventListener("click", () => {
+  els.results.classList.add("hidden");
+  els.setup.classList.remove("hidden");
+});
+
+(function init() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      els.vocabInput.value = JSON.stringify(parsed, null, 2);
+      return;
+    } catch (e) {
+      // fall through to sample
+    }
+  }
+  els.vocabInput.value = JSON.stringify(SAMPLE_VOCAB, null, 2);
+})();
+</script>
+</body>
+</html>
