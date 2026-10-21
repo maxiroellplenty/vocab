@@ -11,7 +11,7 @@
 
 body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  background: #f4f5f7;
+  background: #f0f2f5;
   color: #1f2430;
   margin: 0;
   padding: 2rem 1rem;
@@ -21,14 +21,15 @@ body {
   max-width: 640px;
   margin: 0 auto;
   background: #fff;
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 2rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
   margin-top: 0;
-  font-size: 1.6rem;
+  font-size: 1.8rem;
+  text-align: center;
 }
 
 h2 {
@@ -69,26 +70,26 @@ textarea {
 }
 
 button {
-  padding: 0.6rem 1.1rem;
+  padding: 0.6rem 1.2rem;
   border: none;
-  border-radius: 8px;
-  background: #3457d5;
+  border-radius: 4px;
+  background: #0084ff;
   color: #fff;
   font-size: 0.95rem;
   cursor: pointer;
 }
 
 button:hover {
-  background: #2a46b0;
+  background: #0073e6;
 }
 
 button.secondary {
-  background: #e1e4ea;
-  color: #1f2430;
+  background: #e4e6eb;
+  color: #000;
 }
 
 button.secondary:hover {
-  background: #cfd3dc;
+  background: #d0d2d7;
 }
 
 .error {
@@ -122,7 +123,7 @@ button.secondary:hover {
 }
 
 .prompt {
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   font-weight: 600;
   margin-bottom: 1rem;
 }
@@ -146,7 +147,7 @@ button.secondary:hover {
 .answer-slot {
   min-height: 3rem;
   border: 2px dashed #ccc;
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 0.5rem;
   display: flex;
   flex-wrap: wrap;
@@ -162,22 +163,22 @@ button.secondary:hover {
 }
 
 .block {
-  background: #eaefff;
-  border: 1px solid #c3cdfa;
+  background: #e7f3ff;
+  border: 1px solid #0084ff;
   border-radius: 6px;
-  padding: 0.4rem 0.75rem;
+  padding: 0.5rem 0.9rem;
   font-size: 1rem;
   cursor: pointer;
   user-select: none;
 }
 
 .block:hover {
-  background: #d7e0ff;
+  background: #d0e8ff;
 }
 
 .block.placed {
-  background: #d7ffe0;
-  border-color: #a6e8b8;
+  background: #dffcf0;
+  border-color: #31a24c;
 }
 
 .practice-actions {
@@ -194,7 +195,7 @@ button.secondary:hover {
 }
 
 #feedback.correct {
-  color: #1d8a3e;
+  color: #31a24c;
 }
 
 #feedback.incorrect {
@@ -209,8 +210,8 @@ button.secondary:hover {
   <section id="setup">
     <h2>Vocabulary List</h2>
     <p class="hint">
-      JSON array of entries: <code>{"word": "...", "translation": "...", "sentence": "..."}</code>.
-      The sentence should contain the word, and will be practiced as a block-building exercise.
+      JSON array of entries: <code>{"word": "...", "translation": "...", "sentence": "...", "sentenceTranslation": "..."}</code>.
+      Sentences are optional. If provided, block-building exercises show the translated sentence and you build the original.
     </p>
     <textarea id="vocabInput" rows="12" spellcheck="false"></textarea>
     <div class="setup-actions">
@@ -248,12 +249,13 @@ button.secondary:hover {
 </div>
 <script>
 const SAMPLE_VOCAB = [
-  { word: "house", translation: "Haus", sentence: "The house is very big." },
-  { word: "apple", translation: "Apfel", sentence: "I eat an apple every day." },
-  { word: "water", translation: "Wasser", sentence: "She drinks a glass of water." },
-  { word: "friend", translation: "Freund", sentence: "My friend lives in Berlin." },
-  { word: "book", translation: "Buch", sentence: "He is reading a good book." },
-  { word: "school", translation: "Schule", sentence: "The children walk to school." },
+  { word: "house", translation: "Haus", sentence: "Das Haus ist sehr groß.", sentenceTranslation: "The house is very big." },
+  { word: "apple", translation: "Apfel", sentence: "Ich esse jeden Tag einen Apfel.", sentenceTranslation: "I eat an apple every day." },
+  { word: "water", translation: "Wasser", sentence: "Sie trinkt ein Glas Wasser.", sentenceTranslation: "She drinks a glass of water." },
+  { word: "friend", translation: "Freund", sentence: "Mein Freund lebt in Berlin.", sentenceTranslation: "My friend lives in Berlin." },
+  { word: "book", translation: "Buch", sentence: "Er liest ein gutes Buch.", sentenceTranslation: "He is reading a good book." },
+  { word: "school", translation: "Schule", sentence: "Die Kinder gehen zur Schule.", sentenceTranslation: "The children walk to school." },
+  { word: "kennen", translation: "meet", sentence: "Freut mich dich kennen zu lernen.", sentenceTranslation: "Nice to meet you." },
 ];
 
 const STORAGE_KEY = "vocab-app-list";
@@ -328,6 +330,9 @@ function parseVocabInput(text) {
     if (!entry.word || !entry.translation) {
       throw new Error(`Entry ${i + 1} needs at least "word" and "translation".`);
     }
+    if (entry.sentence && !entry.sentenceTranslation) {
+      throw new Error(`Entry ${i + 1} has "sentence" but missing "sentenceTranslation".`);
+    }
   });
   return data;
 }
@@ -401,6 +406,7 @@ function renderSentenceExercise(ex) {
   const { entry } = ex;
   const tokens = entry.sentence.trim().split(/\s+/);
   const shuffled = shuffle(tokens.map((t, i) => ({ text: t, id: i })));
+  const promptText = entry.sentenceTranslation || entry.sentence;
 
   const typeTag = document.createElement("div");
   typeTag.className = "exercise-type";
@@ -408,7 +414,10 @@ function renderSentenceExercise(ex) {
 
   const promptEl = document.createElement("div");
   promptEl.className = "prompt";
-  promptEl.textContent = `Build the sentence that uses the word "${entry.word}":`;
+  promptEl.textContent = promptText;
+  promptEl.style.fontSize = "1.1rem";
+  promptEl.style.fontStyle = "italic";
+  promptEl.style.marginBottom = "1.5rem";
 
   const answerSlot = document.createElement("div");
   answerSlot.className = "answer-slot";
