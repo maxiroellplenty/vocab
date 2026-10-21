@@ -312,8 +312,9 @@ function buildExercises(vocabList) {
       direction,
     });
     if (entry.sentence && entry.sentence.trim()) {
+      const sentenceType = Math.random() < 0.5 ? "sentenceBlock" : "sentenceWrite";
       items.push({
-        kind: "sentence",
+        kind: sentenceType,
         entry,
       });
     }
@@ -366,8 +367,10 @@ function renderExercise() {
 
   if (ex.kind === "translate") {
     renderTranslateExercise(ex);
-  } else {
-    renderSentenceExercise(ex);
+  } else if (ex.kind === "sentenceBlock") {
+    renderSentenceBlockExercise(ex);
+  } else if (ex.kind === "sentenceWrite") {
+    renderSentenceWriteExercise(ex);
   }
 }
 
@@ -402,7 +405,7 @@ function renderTranslateExercise(ex) {
   input.focus();
 }
 
-function renderSentenceExercise(ex) {
+function renderSentenceBlockExercise(ex) {
   const { entry } = ex;
   const tokens = entry.sentence.trim().split(/\s+/);
   const shuffled = shuffle(tokens.map((t, i) => ({ text: t, id: i })));
@@ -480,6 +483,47 @@ function renderSentenceExercise(ex) {
   els.exercise._getPlacedText = () => placedIds.map((id) => tokens[id]).join(" ");
 }
 
+function renderSentenceWriteExercise(ex) {
+  const { entry } = ex;
+  const promptText = entry.sentenceTranslation || entry.sentence;
+
+  const typeTag = document.createElement("div");
+  typeTag.className = "exercise-type";
+  typeTag.textContent = "Write Sentence";
+
+  const promptEl = document.createElement("div");
+  promptEl.className = "prompt";
+  promptEl.textContent = promptText;
+  promptEl.style.fontSize = "1.1rem";
+  promptEl.style.fontStyle = "italic";
+  promptEl.style.marginBottom = "1.5rem";
+
+  const input = document.createElement("textarea");
+  input.id = "sentenceInput";
+  input.rows = "3";
+  input.style.width = "100%";
+  input.style.fontSize = "1rem";
+  input.style.padding = "0.6rem";
+  input.style.border = "1px solid #ccc";
+  input.style.borderRadius = "4px";
+  input.style.fontFamily = "inherit";
+  input.style.marginBottom = "1rem";
+  input.placeholder = "Type the sentence...";
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && e.ctrlKey) {
+      e.preventDefault();
+      if (!answered) checkAnswer();
+    }
+  });
+
+  els.exercise.appendChild(typeTag);
+  els.exercise.appendChild(promptEl);
+  els.exercise.appendChild(input);
+  input.focus();
+
+  els.exercise._getAnswerText = () => input.value;
+}
+
 function checkAnswer() {
   const ex = exercises[currentIndex];
   let isCorrect = false;
@@ -492,10 +536,16 @@ function checkAnswer() {
     correctAnswerText = expected;
     isCorrect = normalize(userAnswer) === normalize(expected);
     input.disabled = true;
-  } else {
+  } else if (ex.kind === "sentenceBlock") {
     const builtText = els.exercise._getPlacedText();
     correctAnswerText = ex.entry.sentence;
     isCorrect = normalize(builtText) === normalize(ex.entry.sentence);
+  } else if (ex.kind === "sentenceWrite") {
+    const input = document.getElementById("sentenceInput");
+    const userAnswer = input.value;
+    correctAnswerText = ex.entry.sentence;
+    isCorrect = normalize(userAnswer) === normalize(ex.entry.sentence);
+    input.disabled = true;
   }
 
   answered = true;
