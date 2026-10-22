@@ -69,6 +69,12 @@ textarea {
   flex-wrap: wrap;
 }
 
+.quick-load-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
 button {
   padding: 0.6rem 1.2rem;
   border: none;
@@ -108,6 +114,7 @@ button.secondary:hover {
 
 #exercise {
   min-height: 140px;
+  line-height: 1.8;
 }
 
 .exercise-type {
@@ -152,9 +159,11 @@ button.secondary:hover {
 #answerInput {
   width: 100%;
   font-size: 1.1rem;
-  padding: 0.6rem;
+  padding: 0.8rem;
   border: 1px solid #ccc;
   border-radius: 8px;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
 }
 
 .answer-slot {
@@ -245,8 +254,28 @@ button.secondary:hover {
 .practice-actions {
   display: flex;
   gap: 0.75rem;
-  margin-top: 1rem;
+  margin-top: 2.5rem;
   flex-wrap: wrap;
+}
+
+.help-button {
+  padding: 0.6rem 1.2rem;
+  border: 2px solid #ffc107;
+  background: #fff8e1;
+  color: #f57f17;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.help-button:hover:not(:disabled) {
+  background: #ffe082;
+}
+
+.help-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 #feedback {
@@ -270,6 +299,10 @@ button.secondary:hover {
 
   <section id="setup">
     <h2>Vocabulary List</h2>
+    <div class="quick-load-actions">
+      <button id="loadLessonBtn" type="button" class="secondary">Load Lesson</button>
+      <button id="loadQABtn" type="button" class="secondary">Load QA</button>
+    </div>
     <p class="hint">
       JSON array of entries: <code>{"word": "...", "translation": "...", "options": ["...", "...", "..."], "sentence": "...", "sentenceTranslation": "..."}</code>.
       Translation can be a string or array. Add optional <code>options</code> array for multiple-choice mode. Sentences are optional.
@@ -309,140 +342,691 @@ button.secondary:hover {
   </section>
 </div>
 <script>
-const SAMPLE_VOCAB = [
+const QA_DATA = [
   {
-    "word": "there",
-    "translation": ["da", "dort", "dahin", "dorthin"]
+    "type": "questionAnswer",
+    "question": "Watch out! There's a big lion in the garden!",
+    "answers": ["No, that's just Toby my cat!"]
   },
   {
-    "word": "sad",
-    "translation": "traurig"
+    "type": "questionAnswer",
+    "question": "What about this green T-shirt?",
+    "answers": ["No, Dad. I don't like green."]
   },
   {
-    "word": "Don't go.",
-    "translation": "Geh nicht."
+    "type": "questionAnswer",
+    "question": "My new trainers are orange",
+    "answers": ["It's my favourite color."]
   },
   {
-    "word": "Bye.",
-    "translation": "Tschüs."
+    "type": "questionAnswer",
+    "question": "Zoe is sad.",
+    "answers": ["Her best friend is at a new school now."]
   },
   {
-    "word": "Watch out!",
-    "translation": ["Pass auf!", "Vorsicht!"]
+    "type": "questionAnswer",
+    "question": "Here's my new skateboard.",
+    "answers": ["Oh, it's great! Ok.- Have a go."]
   },
   {
-    "word": "(I'm) sorry.",
-    "translation": ["Tut mir leid.", "Entschuldigung"]
+    "type": "questionAnswer",
+    "question": "Don't go.",
+    "answers": ["Wait for me!"]
   },
   {
-    "word": "So?",
-    "translation": ["Und?", "Na und?"]
-  },
-  {
-    "sentence": "Nice to meet you.",
-    "sentenceTranslation": ["Freut mich, dich kennenzulernen.", "Freut mich, euch kennenzulernen.", "Freut mich, Sie kennenzulernen."]
-  },
-  {
-    "word": "(to) hurry up",
-    "translation": "sich beeilen"
-  },
-  {
-    "word": "who?",
-    "translation": "wer?"
-  },
-  {
-    "word": "friendly",
-    "translation": "freundlich"
-  },
-  {
-    "word": "shoe",
-    "translation": "Schuh"
-  },
-  {
-    "word": "trainer",
-    "translation": "Turnschuh"
-  },
-  {
-    "word": "(to) forget",
-    "translation": "vergessen"
-  },
-  {
-    "word": "(to) wear",
-    "translation": "tragen"
-  },
-  {
-    "word": "British",
-    "translation": "britisch"
-  },
-  {
-    "word": "different",
-    "translation": ["verschieden", "anders"]
-  },
-  {
-    "word": "(to) have",
-    "translation": "haben"
-  },
-  {
-    "sentence": "I don't like green.",
-    "sentenceTranslation": ["Ich mag Grün nicht.", "Ich mag kein Grün."]
-  },
-  {
-    "word": "Have a go.",
-    "translation": "Versuch's mal."
-  },
-  {
-    "word": "language",
-    "translation": "Sprache"
-  },
-  {
-    "word": "form (of)",
-    "translation": "Form (von)"
-  },
-  {
-    "word": "of",
-    "translation": "von"
-  },
-  {
-    "word": "long",
-    "translation": "lang"
-  },
-  {
-    "word": "short",
-    "translation": "kurz"
-  },
-  {
-    "word": "people",
-    "translation": ["Leute", "Menschen"]
-  },
-  {
-    "word": "silly",
-    "translation": ["albern", "blöd"]
-  },
-  {
-    "word": "sentence",
-    "translation": "Satz"
-  },
-  {
-    "word": "Satz",
-    "translation": "sentence",
-    "options": ["word", "sentence", "line", "page"]
-    
-  },
-  {
-    "word": "help",
-    "translation": "Hilfe"
-  },
-  {
-    "word": "(to) help",
-    "translation": "helfen"
+    "type": "word",
+    "word": "Is he your best friend?",
+    "translations": ["Yes he is"],
+    "options": ["Yes she is", "Yes I is", "Yes he is", "Yes they are"]
   }
 ];
+
+const SAMPLE_VOCAB = [
+  {
+    "type": "word",
+    "word": "speaker",
+    "translations": ["Sprecher/in"]
+  },
+  {
+    "type": "word",
+    "word": "(to) speak",
+    "translations": ["sprechen"]
+  },
+  {
+    "type": "word",
+    "word": "about me",
+    "translations": ["über mich", "über dich", "über..."]
+  },
+  {
+    "type": "word",
+    "word": "at 1 o'clock",
+    "translations": ["um 1 Uhr", "um 13 Uhr"]
+  },
+  {
+    "type": "word",
+    "word": "appointment",
+    "translations": ["Verabredung", "Termin"]
+  },
+  {
+    "type": "word",
+    "word": "there",
+    "translations": ["da", "dort", "dahin", "dorthin"],
+    "options": ["da", "hier", "dahin", "wohin"]
+  },
+  {
+    "type": "word",
+    "word": "da",
+    "translations": ["there"]
+  },
+  {
+    "type": "word",
+    "word": "sad",
+    "translations": ["traurig"],
+    "options": ["traurig", "glücklich", "lustig", "müde"]
+  },
+  {
+    "type": "word",
+    "word": "traurig",
+    "translations": ["sad"]
+  },
+  {
+    "type": "word",
+    "word": "Don't go.",
+    "translations": ["Geh nicht."],
+    "options": ["Geh nicht.", "Geh jetzt.", "Komm her.", "Bleib hier."]
+  },
+  {
+    "type": "word",
+    "word": "Bye.",
+    "translations": ["Tschüs."],
+    "options": ["Hallo.", "Tschüs.", "Auf Wiedersehen.", "Guten Morgen."]
+  },
+  {
+    "type": "word",
+    "word": "Watch out!",
+    "translations": ["Pass auf!", "Vorsicht!"],
+    "options": ["Pass auf!", "Schau hin!", "Vorsicht!", "Achtung!"]
+  },
+  {
+    "type": "word",
+    "word": "(I'm) sorry.",
+    "translations": ["Tut mir leid.", "Entschuldigung"],
+    "options": ["Tut mir leid.", "Danke schön.", "Entschuldigung", "Bitte schön."]
+  },
+  {
+    "type": "word",
+    "word": "So?",
+    "translations": ["Und?", "Na und?"],
+    "options": ["Und?", "Wirklich?", "Na und?", "Warum?"]
+  },
+  {
+    "type": "word",
+    "word": "Nice to meet you.",
+    "translations": ["Freut mich, dich kennen zu lernen.", "Freut mich, euch kennen zu lernen.", "Freut mich, Sie kennenzulernen."],
+    "options": ["Freut mich, dich kennen zu lernen.", "Auf Wiedersehen.", "Bis bald.", "Gute Nacht."]
+  },
+  {
+    "type": "sentence",
+    "sentence": "Freut mich, dich kennen zu lernen.",
+    "translation": "Nice to meet you."
+  },
+  {
+    "type": "word",
+    "word": "(to) hurry up",
+    "translations": ["sich beeilen"],
+    "options": ["sich beeilen", "warten", "schlafen", "essen"]
+  },
+  {
+    "type": "word",
+    "word": "sich beeilen",
+    "translations": ["(to) hurry up"]
+  },
+  {
+    "type": "word",
+    "word": "who?",
+    "translations": ["wer?"],
+    "options": ["wer?", "was?", "wo?", "wann?"]
+  },
+  {
+    "type": "word",
+    "word": "wer?",
+    "translations": ["who?"]
+  },
+  {
+    "type": "word",
+    "word": "friendly",
+    "translations": ["freundlich"],
+    "options": ["freundlich", "böse", "nett", "gemein"]
+  },
+  {
+    "type": "word",
+    "word": "freundlich",
+    "translations": ["friendly"]
+  },
+  {
+    "type": "word",
+    "word": "shoe",
+    "translations": ["Schuh"],
+    "options": ["Schuh", "Hut", "Hemd", "Socke"]
+  },
+  {
+    "type": "word",
+    "word": "trainer",
+    "translations": ["Turnschuh"],
+    "options": ["Turnschuh", "Sandal", "Stiefel", "Pantoffel"]
+  },
+  {
+    "type": "word",
+    "word": "Schuh",
+    "translations": ["shoe"]
+  },
+  {
+    "type": "word",
+    "word": "(to) forget",
+    "translations": ["vergessen"],
+    "options": ["vergessen", "erinnern", "lernen", "bedenken"]
+  },
+  {
+    "type": "word",
+    "word": "vergessen",
+    "translations": ["(to) forget"]
+  },
+  {
+    "type": "word",
+    "word": "(to) wear",
+    "translations": ["tragen"],
+    "options": ["tragen", "waschen", "nähen", "verkaufen"]
+  },
+  {
+    "type": "word",
+    "word": "tragen",
+    "translations": ["(to) wear"]
+  },
+  {
+    "type": "word",
+    "word": "British",
+    "translations": ["britisch"],
+    "options": ["britisch", "französisch", "deutsch", "italienisch"]
+  },
+  {
+    "type": "word",
+    "word": "britisch",
+    "translations": ["British"]
+  },
+  {
+    "type": "word",
+    "word": "different",
+    "translations": ["verschieden", "anders"],
+    "options": ["verschieden", "gleich", "anders", "ähnlich"]
+  },
+  {
+    "type": "word",
+    "word": "verschieden",
+    "translations": ["different"]
+  },
+  {
+    "type": "word",
+    "word": "(to) have",
+    "translations": ["haben"],
+    "options": ["haben", "sein", "geben", "halten"]
+  },
+  {
+    "type": "word",
+    "word": "haben",
+    "translations": ["(to) have"]
+  },
+  {
+    "type": "word",
+    "word": "I don't like green.",
+    "translations": ["Ich mag Grün nicht."],
+    "options": ["Ich mag Grün nicht.", "Ich liebe Grün.", "Ich mag Grün sehr.", "Grün ist schön."]
+  },
+  {
+    "type": "sentence",
+    "sentence": "Ich mag Grün nicht.",
+    "translation": "I don't like green."
+  },
+  {
+    "type": "word",
+    "word": "Have a go.",
+    "translations": ["Versuch's mal."],
+    "options": ["Versuch's mal.", "Gib auf.", "Lass mich.", "Probier es."]
+  },
+  {
+    "type": "word",
+    "word": "language",
+    "translations": ["Sprache"],
+    "options": ["Sprache", "Buch", "Wort", "Satz"]
+  },
+  {
+    "type": "word",
+    "word": "Sprache",
+    "translations": ["language"]
+  },
+  {
+    "type": "word",
+    "word": "form (of)",
+    "translations": ["Form (von)"],
+    "options": ["Form (von)", "Farbe", "Größe", "Stil"]
+  },
+  {
+    "type": "word",
+    "word": "of",
+    "translations": ["von"],
+    "options": ["von", "zu", "mit", "in"]
+  },
+  {
+    "type": "word",
+    "word": "long",
+    "translations": ["lang"],
+    "options": ["lang", "kurz", "breit", "tief"]
+  },
+  {
+    "type": "word",
+    "word": "lang",
+    "translations": ["long"]
+  },
+  {
+    "type": "word",
+    "word": "short",
+    "translations": ["kurz"],
+    "options": ["kurz", "lang", "dünn", "dick"]
+  },
+  {
+    "type": "word",
+    "word": "kurz",
+    "translations": ["short"]
+  },
+  {
+    "type": "word",
+    "word": "people",
+    "translations": ["Leute", "Menschen"],
+    "options": ["Leute", "Orte", "Menschen", "Tiere"]
+  },
+  {
+    "type": "word",
+    "word": "Leute",
+    "translations": ["people"]
+  },
+  {
+    "type": "word",
+    "word": "silly",
+    "translations": ["albern", "blöd"],
+    "options": ["albern", "klug", "blöd", "weise"]
+  },
+  {
+    "type": "word",
+    "word": "albern",
+    "translations": ["silly"]
+  },
+  {
+    "type": "word",
+    "word": "sentence",
+    "translations": ["Satz"],
+    "options": ["Satz", "Wort", "Buchstabe", "Phrase"]
+  },
+  {
+    "type": "word",
+    "word": "Satz",
+    "translations": ["sentence"]
+  },
+  {
+    "type": "word",
+    "word": "help",
+    "translations": ["Hilfe"],
+    "options": ["Hilfe", "Problem", "Frage", "Antwort"]
+  },
+  {
+    "type": "word",
+    "word": "(to) help",
+    "translations": ["helfen"],
+    "options": ["helfen", "hindern", "stören", "ärgern"]
+  },
+  {
+    "type": "word",
+    "word": "helfen",
+    "translations": ["(to) help"]
+  },
+  {
+    "type": "word",
+    "word": "new",
+    "translations": ["neu"]
+  },
+  {
+    "type": "word",
+    "word": "uniform",
+    "translations": ["(Schul-)Uniform"]
+  },
+  {
+    "type": "word",
+    "word": "nice",
+    "translations": ["nett", "schön"]
+  },
+  {
+    "type": "word",
+    "word": "too",
+    "translations": ["auch"]
+  },
+  {
+    "type": "word",
+    "word": "(to) know",
+    "translations": ["wissen", "kennen"]
+  },
+  {
+    "type": "word",
+    "word": "brother",
+    "translations": ["Bruder"]
+  },
+  {
+    "type": "word",
+    "word": "sister",
+    "translations": ["Schwester"]
+  },
+  {
+    "type": "word",
+    "word": "student",
+    "translations": ["Schüler/in", "Student/in"]
+  },
+  {
+    "type": "word",
+    "word": "but",
+    "translations": ["aber"]
+  },
+  {
+    "type": "word",
+    "word": "he/she/it isn't ...",
+    "translations": ["er/sie/es ist nicht ...", "er/sie/es ist kein/e ..."]
+  },
+  {
+    "type": "word",
+    "word": "his mum",
+    "translations": ["seine Mama"]
+  },
+  {
+    "type": "word",
+    "word": "mum",
+    "translations": ["Mama", "Mutti"]
+  },
+  {
+    "type": "word",
+    "word": "mother",
+    "translations": ["Mutter"]
+  },
+  {
+    "type": "word",
+    "word": "dad",
+    "translations": ["Papa", "Vati"]
+  },
+  {
+    "type": "word",
+    "word": "father",
+    "translations": ["Vater"]
+  },
+  {
+    "type": "word",
+    "word": "navy",
+    "translations": ["Marine"]
+  },
+  {
+    "type": "word",
+    "word": "(to) look at",
+    "translations": ["anschauen", "ansehen"]
+  },
+  {
+    "type": "word",
+    "word": "dark",
+    "translations": ["dunkel"]
+  },
+  {
+    "type": "word",
+    "word": "Thank you.",
+    "translations": ["Danke."]
+  },
+  {
+    "type": "word",
+    "word": "please",
+    "translations": ["bitte"]
+  },
+  {
+    "type": "word",
+    "word": "You're late.",
+    "translations": ["Du bist spät dran.", "Du bist zu spät."]
+  },
+  {
+    "type": "word",
+    "word": "(to) wait (for)",
+    "translations": ["warten (auf)"]
+  },
+  {
+    "type": "word",
+    "word": "minute",
+    "translations": ["Minute"]
+  },
+  {
+    "type": "word",
+    "word": "What time is it?",
+    "translations": ["Wie spät ist es?"]
+  },
+  {
+    "type": "word",
+    "word": "profile",
+    "translations": ["Profil", "Beschreibung", "Porträt"]
+  },
+  {
+    "type": "word",
+    "word": "library",
+    "translations": ["Bibliothek", "Bücherei"]
+  },
+  {
+    "type": "word",
+    "word": "home",
+    "translations": ["Heim", "Zuhause"]
+  },
+  {
+    "type": "word",
+    "word": "before school/lessons",
+    "translations": ["vor der Schule (vor Schulbeginn)", "vorm Unterricht"]
+  },
+  {
+    "type": "word",
+    "word": "you aren't ...",
+    "translations": ["du bist nicht ...", "du bist kein/e ..."]
+  },
+  {
+    "type": "word",
+    "word": "Simon says ...",
+    "translations": ["Simon sagt ..."]
+  },
+  {
+    "type": "word",
+    "word": "(to) put",
+    "translations": ["legen", "stellen", "(etwas wohin) tun"]
+  },
+  {
+    "type": "word",
+    "word": "(to) talk (to)",
+    "translations": ["reden (mit)", "sich unterhalten (mit)"]
+  },
+  {
+    "type": "word",
+    "word": "(to) open",
+    "translations": ["öffnen", "aufmachen"]
+  },
+  {
+    "type": "word",
+    "word": "(to) touch",
+    "translations": ["berühren", "anfassen"]
+  },
+  {
+    "type": "word",
+    "word": "(to) give",
+    "translations": ["geben"]
+  },
+  {
+    "type": "word",
+    "word": "fifteen",
+    "translations": ["fünfzehn"]
+  },
+  {
+    "type": "word",
+    "word": "sixteen",
+    "translations": ["sechzehn"]
+  },
+  {
+    "type": "word",
+    "word": "seventeen",
+    "translations": ["siebzehn"]
+  },
+  {
+    "type": "word",
+    "word": "eighteen",
+    "translations": ["achtzehn"]
+  },
+  {
+    "type": "word",
+    "word": "nineteen",
+    "translations": ["neunzehn"]
+  },
+  {
+    "type": "word",
+    "word": "twenty",
+    "translations": ["zwanzig"]
+  },
+  {
+    "type": "word",
+    "word": "twenty-one",
+    "translations": ["einundzwanzig"]
+  },
+  {
+    "type": "word",
+    "word": "twenty-two",
+    "translations": ["zweiundzwanzig"]
+  },
+  {
+    "type": "word",
+    "word": "thirty",
+    "translations": ["dreißig"]
+  },
+  {
+    "type": "word",
+    "word": "thirty-one",
+    "translations": ["einunddreißig"]
+  },
+  {
+    "type": "word",
+    "word": "thirty-two",
+    "translations": ["zweiunddreißig"]
+  },
+  {
+    "type": "word",
+    "word": "forty",
+    "translations": ["vierzig"]
+  },
+  {
+    "type": "word",
+    "word": "fifty",
+    "translations": ["fünfzig"]
+  },
+  {
+    "type": "word",
+    "word": "sixty",
+    "translations": ["sechzig"]
+  },
+  {
+    "type": "word",
+    "word": "seventy",
+    "translations": ["siebzig"]
+  },
+  {
+    "type": "word",
+    "word": "eighty",
+    "translations": ["achtzig"]
+  },
+  {
+    "type": "word",
+    "word": "ninety",
+    "translations": ["neunzig"]
+  },
+  {
+    "type": "word",
+    "word": "hundred",
+    "translations": ["hundert", "einhundert"]
+  },
+  {
+    "type": "word",
+    "word": "(to) count",
+    "translations": ["zählen"]
+  },
+  {
+    "type": "word",
+    "word": "them",
+    "translations": ["sie", "ihnen"]
+  },
+  {
+    "type": "word",
+    "word": "telephone",
+    "translations": ["Telefon"]
+  },
+  {
+    "type": "word",
+    "word": "o",
+    "translations": ["Null (in Telefonnummern)"]
+  },
+  {
+    "type": "word",
+    "word": "double",
+    "translations": ["Doppel-"]
+  },
+  {
+    "type": "word",
+    "word": "See you.",
+    "translations": ["Bis gleich.", "Bis bald."]
+  },
+  {
+    "type": "word",
+    "word": "the first day",
+    "translations": ["der erste Tag"]
+  },
+  {
+    "type": "word",
+    "word": "at school",
+    "translations": ["in der Schule"]
+  },
+  {
+    "type": "word",
+    "word": "kid",
+    "translations": ["Kind", "Jugendliche(r)"]
+  },
+  {
+    "type": "word",
+    "word": "her best friend",
+    "translations": ["ihr bester Freund", "ihre beste Freundin"]
+  },
+  {
+    "type": "word",
+    "word": "they're ...",
+    "translations": ["sie sind ..."]
+  },
+  {
+    "type": "word",
+    "word": "flat",
+    "translations": ["Wohnung"]
+  },
+  {
+    "type": "word",
+    "word": "their first day",
+    "translations": ["ihr erster Tag"]
+  }
+]
+
 
 const STORAGE_KEY = "vocab-app-list";
 
 const els = {
   vocabInput: document.getElementById("vocabInput"),
   loadSampleBtn: document.getElementById("loadSampleBtn"),
+  loadLessonBtn: document.getElementById("loadLessonBtn"),
+  loadQABtn: document.getElementById("loadQABtn"),
   startBtn: document.getElementById("startBtn"),
   setupError: document.getElementById("setupError"),
   setup: document.getElementById("setup"),
@@ -489,28 +1073,18 @@ function normalizeMultiple(input) {
 function buildExercises(vocabList) {
   const items = [];
   vocabList.forEach((entry) => {
-    if (entry.word && entry.translation) {
+    if (entry.type === "word" && entry.word && entry.translations) {
       if (entry.options) {
-        items.push({
-          kind: "translate",
-          entry,
-          direction: "wordToTranslation",
-        });
+        items.push({ kind: "translate", entry, direction: "wordToTranslation" });
       } else {
         const direction = Math.random() < 0.5 ? "wordToTranslation" : "translationToWord";
-        items.push({
-          kind: "translate",
-          entry,
-          direction,
-        });
+        items.push({ kind: "translate", entry, direction });
       }
-    }
-    if (entry.sentence && entry.sentence.trim()) {
+    } else if (entry.type === "sentence" && entry.sentence && entry.translation) {
       const sentenceType = Math.random() < 0.5 ? "sentenceBlock" : "sentenceWrite";
-      items.push({
-        kind: sentenceType,
-        entry,
-      });
+      items.push({ kind: sentenceType, entry });
+    } else if (entry.type === "questionAnswer" && entry.question && entry.answers) {
+      items.push({ kind: "questionAnswer", entry });
     }
   });
   return shuffle(items);
@@ -522,10 +1096,20 @@ function parseVocabInput(text) {
     throw new Error("Vocabulary must be a non-empty JSON array.");
   }
   data.forEach((entry, i) => {
-    const hasWordPair = entry.word && entry.translation;
-    const hasSentencePair = entry.sentence && entry.sentenceTranslation;
-    if (!hasWordPair && !hasSentencePair) {
-      throw new Error(`Entry ${i + 1} needs either ("word" and "translation") or ("sentence" and "sentenceTranslation").`);
+    if (entry.type === "word") {
+      if (!entry.word || !entry.translations) {
+        throw new Error(`Entry ${i + 1}: type "word" needs "word" and "translations" array.`);
+      }
+    } else if (entry.type === "sentence") {
+      if (!entry.sentence || !entry.translation) {
+        throw new Error(`Entry ${i + 1}: type "sentence" needs "sentence" and "translation".`);
+      }
+    } else if (entry.type === "questionAnswer") {
+      if (!entry.question || !entry.answers) {
+        throw new Error(`Entry ${i + 1}: type "questionAnswer" needs "question" and "answers" array.`);
+      }
+    } else {
+      throw new Error(`Entry ${i + 1}: unknown type "${entry.type}". Use "word", "sentence", "conjugation", or "questionAnswer".`);
     }
   });
   return data;
@@ -564,6 +1148,8 @@ function renderExercise() {
     renderSentenceBlockExercise(ex);
   } else if (ex.kind === "sentenceWrite") {
     renderSentenceWriteExercise(ex);
+  } else if (ex.kind === "questionAnswer") {
+    renderQuestionAnswerExercise(ex);
   }
 }
 
@@ -571,7 +1157,7 @@ function renderTranslateExercise(ex) {
   const { entry, direction } = ex;
   const useMultipleChoice = !!entry.options;
 
-  const prompt = direction === "wordToTranslation" ? entry.word : entry.translation;
+  const prompt = direction === "wordToTranslation" ? entry.word : entry.translations[0];
   const label = direction === "wordToTranslation" ? "Translate this word:" : "What is the original word for:";
 
   const typeTag = document.createElement("div");
@@ -592,22 +1178,62 @@ function renderTranslateExercise(ex) {
     input.type = "text";
     input.id = "answerInput";
     input.autocomplete = "off";
+
+    const acceptedAnswers = direction === "wordToTranslation" ? entry.translations : [entry.word];
+    const expected = acceptedAnswers[0];
+    const isSingleAnswer = true;
+
     input.placeholder = "Type your answer...";
+
+    let hintEl = null;
+    if (isSingleAnswer) {
+      hintEl = document.createElement("div");
+      hintEl.style.fontSize = "0.9rem";
+      hintEl.style.color = "#999";
+      hintEl.style.marginTop = "0.5rem";
+      hintEl.style.marginBottom = "1.5rem";
+      hintEl.textContent = `0/${expected.length} letters`;
+    }
+
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
         if (!answered) checkAnswer();
       }
     });
+    input.addEventListener("input", (e) => {
+      if (hintEl) {
+        const typed = e.target.value.length;
+        const total = expected.length;
+        hintEl.textContent = `${typed}/${total} letters`;
+      }
+    });
 
     els.exercise.appendChild(input);
+    if (hintEl) {
+      els.exercise.appendChild(hintEl);
+    }
+
+    if (isSingleAnswer) {
+      const helpBtn = document.createElement("button");
+      helpBtn.className = "help-button";
+      helpBtn.textContent = "💡 Hint";
+      helpBtn.onclick = () => {
+        const firstLetter = expected[0];
+        input.value = firstLetter;
+        hintEl.textContent = `${1}/${expected.length} letters`;
+        helpBtn.disabled = true;
+        input.focus();
+      };
+      els.exercise.appendChild(helpBtn);
+    }
+
     input.focus();
   }
 }
 
 function renderMultipleChoice(ex) {
   const { entry } = ex;
-  const correct = normalizeMultiple(entry.translation)[0];
   const options = shuffle(entry.options);
   let selectedAnswer = null;
 
@@ -749,6 +1375,83 @@ function renderSentenceWriteExercise(ex) {
   els.exercise._getAnswerText = () => input.value;
 }
 
+function renderQuestionAnswerExercise(ex) {
+  const { entry } = ex;
+  const question = entry.question;
+  const targetAnswer = entry.answers[0];
+  const tokens = targetAnswer.trim().split(/\s+/);
+  const shuffled = shuffle(tokens.map((t, i) => ({ text: t, id: i })));
+
+  const typeTag = document.createElement("div");
+  typeTag.className = "exercise-type";
+  typeTag.textContent = "Answer Question";
+
+  const promptEl = document.createElement("div");
+  promptEl.className = "prompt";
+  promptEl.innerHTML = `<div class="word" style="font-style: italic;">${question}</div>`;
+  promptEl.style.marginBottom = "1.5rem";
+
+  const answerSlot = document.createElement("div");
+  answerSlot.className = "answer-slot";
+  answerSlot.id = "answerSlot";
+
+  const pool = document.createElement("div");
+  pool.className = "block-pool";
+  pool.id = "blockPool";
+
+  const placedIds = [];
+
+  function renderBlocks() {
+    answerSlot.innerHTML = "";
+    pool.innerHTML = "";
+
+    placedIds.forEach((id) => {
+      const token = tokens[id];
+      const block = document.createElement("span");
+      block.className = "block placed";
+      block.textContent = token;
+      block.addEventListener("click", () => {
+        if (answered) return;
+        const idx = placedIds.indexOf(id);
+        if (idx !== -1) placedIds.splice(idx, 1);
+        renderBlocks();
+      });
+      answerSlot.appendChild(block);
+    });
+
+    shuffled
+      .filter((t) => !placedIds.includes(t.id))
+      .forEach((t) => {
+        const block = document.createElement("span");
+        block.className = "block";
+        block.textContent = t.text;
+        block.addEventListener("click", () => {
+          if (answered) return;
+          placedIds.push(t.id);
+          renderBlocks();
+        });
+        pool.appendChild(block);
+      });
+  }
+
+  renderBlocks();
+
+  els.exercise.appendChild(typeTag);
+  els.exercise.appendChild(promptEl);
+  els.exercise.appendChild(answerSlot);
+  els.exercise.appendChild(pool);
+
+  els.resetWordBtn.classList.remove("hidden");
+  els.resetWordBtn.onclick = () => {
+    if (answered) return;
+    placedIds.length = 0;
+    renderBlocks();
+  };
+
+  els.exercise._getBuiltAnswer = () => placedIds.map((id) => tokens[id]).join(" ");
+  els.exercise._getTargetAnswer = () => targetAnswer;
+}
+
 function checkAnswer() {
   const ex = exercises[currentIndex];
   let isCorrect = false;
@@ -756,10 +1459,9 @@ function checkAnswer() {
 
   if (ex.kind === "translate") {
     const useMultipleChoice = !!ex.entry.options;
-    const expected = ex.direction === "wordToTranslation" ? ex.entry.translation : ex.entry.word;
-    const acceptedAnswers = normalizeMultiple(expected);
-    const displayAnswers = Array.isArray(expected) ? expected.join(" or ") : expected;
-    correctAnswerText = displayAnswers;
+    const acceptedAnswers = ex.direction === "wordToTranslation" ? ex.entry.translations : [ex.entry.word];
+    const normalizedAnswers = acceptedAnswers.map(normalize);
+    correctAnswerText = acceptedAnswers.join(" or ");
 
     if (useMultipleChoice) {
       const userAnswer = els.exercise._getMultipleChoiceAnswer();
@@ -768,20 +1470,20 @@ function checkAnswer() {
         els.feedback.className = "incorrect";
         return;
       }
-      isCorrect = acceptedAnswers.includes(normalize(userAnswer));
+      isCorrect = normalizedAnswers.includes(normalize(userAnswer));
       document.querySelectorAll(".choice-btn").forEach((btn) => {
         btn.disabled = true;
         if (normalize(btn.textContent) === normalize(userAnswer)) {
           btn.classList.toggle("correct", isCorrect);
           btn.classList.toggle("incorrect", !isCorrect);
-        } else if (isCorrect === false && acceptedAnswers.includes(normalize(btn.textContent))) {
+        } else if (!isCorrect && normalizedAnswers.includes(normalize(btn.textContent))) {
           btn.classList.add("correct");
         }
       });
     } else {
       const input = document.getElementById("answerInput");
       const userAnswer = input.value;
-      isCorrect = acceptedAnswers.includes(normalize(userAnswer));
+      isCorrect = normalizedAnswers.includes(normalize(userAnswer));
       input.disabled = true;
     }
   } else if (ex.kind === "sentenceBlock") {
@@ -800,6 +1502,11 @@ function checkAnswer() {
     const normalizedSentences = sentences.map(normalize);
     isCorrect = normalizedSentences.includes(normalize(userAnswer));
     input.disabled = true;
+  } else if (ex.kind === "questionAnswer") {
+    const builtAnswer = els.exercise._getBuiltAnswer();
+    const targetAnswer = els.exercise._getTargetAnswer();
+    correctAnswerText = targetAnswer;
+    isCorrect = normalize(builtAnswer) === normalize(targetAnswer);
   }
 
   answered = true;
@@ -812,8 +1519,13 @@ function checkAnswer() {
 
   els.checkBtn.classList.add("hidden");
   els.resetWordBtn.classList.add("hidden");
-  els.nextBtn.classList.remove("hidden");
   updateStatusBar();
+
+  if (isCorrect) {
+    setTimeout(nextExercise, 1500);
+  } else {
+    els.nextBtn.classList.remove("hidden");
+  }
 }
 
 function nextExercise() {
@@ -833,6 +1545,16 @@ function showResults() {
 
 els.loadSampleBtn.addEventListener("click", () => {
   els.vocabInput.value = JSON.stringify(SAMPLE_VOCAB, null, 2);
+  els.setupError.textContent = "";
+});
+
+els.loadLessonBtn.addEventListener("click", () => {
+  els.vocabInput.value = JSON.stringify(SAMPLE_VOCAB, null, 2);
+  els.setupError.textContent = "";
+});
+
+els.loadQABtn.addEventListener("click", () => {
+  els.vocabInput.value = JSON.stringify(QA_DATA, null, 2);
   els.setupError.textContent = "";
 });
 
