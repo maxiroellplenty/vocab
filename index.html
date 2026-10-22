@@ -378,6 +378,22 @@ const QA_DATA = [
     "word": "Is he your best friend?",
     "translations": ["Yes he is"],
     "options": ["Yes she is", "Yes I is", "Yes he is", "Yes they are"]
+  },
+  {
+    "type": "questionAnswer",
+    "question": "I Like Carl.- I don't like him.",
+    "answers": ["I think he is silly."]
+  },
+  {
+    "type": "word",
+    "word": "Lets make an appointment for Sunday.",
+    "translations": ["Can we meet at 5 o'clock?"],
+    "options": ["Can we meet at 5 o'clock?", "My new trainers are orange.", "Where do you work?"]
+  },
+  {
+    "type": "sentence",
+    "sentence": "Ich bin einunddreißig Jahre alt.",
+    "translation": "I am thirtyone years old"
   }
 ];
 
@@ -775,7 +791,8 @@ const SAMPLE_VOCAB = [
   {
     "type": "word",
     "word": "dark",
-    "translations": ["dunkel"]
+    "translations": ["dunkel"],
+    "options": ["black", "light", "dark"]
   },
   {
     "type": "word",
@@ -796,6 +813,11 @@ const SAMPLE_VOCAB = [
     "type": "word",
     "word": "(to) wait (for)",
     "translations": ["warten (auf)"]
+  },
+  {
+    "type": "sentence",
+    "sentence": "warten (auf)",
+    "translation": "(to) wait (for)"
   },
   {
     "type": "word",
@@ -1262,8 +1284,8 @@ function renderSentenceBlockExercise(ex) {
   const sentences = Array.isArray(entry.sentence) ? entry.sentence : [entry.sentence];
   const tokens = sentences[0].trim().split(/\s+/);
   const shuffled = shuffle(tokens.map((t, i) => ({ text: t, id: i })));
-  const sentenceTranslations = Array.isArray(entry.sentenceTranslation) ? entry.sentenceTranslation : [entry.sentenceTranslation];
-  const promptText = sentenceTranslations[0] || sentences[0];
+  const sentenceTranslations = Array.isArray(entry.sentenceTranslation) ? entry.sentenceTranslation : (entry.sentenceTranslation ? [entry.sentenceTranslation] : []);
+  const promptText = sentenceTranslations[0] || entry.translation || sentences[0];
 
   const typeTag = document.createElement("div");
   typeTag.className = "exercise-type";
@@ -1337,8 +1359,8 @@ function renderSentenceBlockExercise(ex) {
 
 function renderSentenceWriteExercise(ex) {
   const { entry } = ex;
-  const sentenceTranslations = Array.isArray(entry.sentenceTranslation) ? entry.sentenceTranslation : [entry.sentenceTranslation];
-  const promptText = sentenceTranslations[0] || (Array.isArray(entry.sentence) ? entry.sentence[0] : entry.sentence);
+  const sentenceTranslations = Array.isArray(entry.sentenceTranslation) ? entry.sentenceTranslation : (entry.sentenceTranslation ? [entry.sentenceTranslation] : []);
+  const promptText = sentenceTranslations[0] || entry.translation || (Array.isArray(entry.sentence) ? entry.sentence[0] : entry.sentence);
 
   const typeTag = document.createElement("div");
   typeTag.className = "exercise-type";
