@@ -309,7 +309,6 @@ button.secondary:hover {
     </p>
     <textarea id="vocabInput" rows="12" spellcheck="false"></textarea>
     <div class="setup-actions">
-      <button id="loadSampleBtn" type="button">Load Sample</button>
       <button id="startBtn" type="button">Start Practice</button>
     </div>
     <p id="setupError" class="error"></p>
@@ -1046,7 +1045,6 @@ const STORAGE_KEY = "vocab-app-list";
 
 const els = {
   vocabInput: document.getElementById("vocabInput"),
-  loadSampleBtn: document.getElementById("loadSampleBtn"),
   loadLessonBtn: document.getElementById("loadLessonBtn"),
   loadQABtn: document.getElementById("loadQABtn"),
   startBtn: document.getElementById("startBtn"),
@@ -1564,11 +1562,6 @@ function showResults() {
   els.results.classList.remove("hidden");
   els.resultsText.textContent = `You got ${correctCount} out of ${exercises.length} correct.`;
 }
-
-els.loadSampleBtn.addEventListener("click", () => {
-  els.vocabInput.value = JSON.stringify(SAMPLE_VOCAB, null, 2);
-  els.setupError.textContent = "";
-});
 
 els.loadLessonBtn.addEventListener("click", () => {
   els.vocabInput.value = JSON.stringify(SAMPLE_VOCAB, null, 2);
